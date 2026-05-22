@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EndoAI — Diagnostic des MICI</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-logo"><span class="dot"></span>EndoAI</div>
+        <a href="#diagnostic" class="hidden-mobile">Diagnostic</a>
+        <a href="#modeles" class="hidden-mobile">Modèles</a>
+        <a href="#contact" class="hidden-mobile">Contact</a>
+        <a href="https://github.com" target="_blank" class="nav-cta hidden-mobile">GitHub ↗</a>
+        <button class="theme-toggle" id="theme-toggle" title="Basculer le thème">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </button>
+    </nav>
+
+    <!-- HERO -->
+    <div id="hero" style="max-width: 1100px; margin: 0 auto;">
+        <div class="hero-badge">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0"></span>
+            Outil d'aide au diagnostic — MICI
+        </div>
+        <h1 class="hero-title">
+            Diagnostic des <em>maladies inflammatoires</em> par imagerie endoscopique
+        </h1>
+        <p class="hero-desc">
+            Analysez des images d'endoscopie à l'aide de modèles d'IA de pointe pour distinguer la maladie de Crohn, la
+            colite ulcéreuse et un état normal. Résultats en quelques secondes, avec explication visuelle.
+        </p>
+        <div class="hero-btns">
+            <button class="btn-primary"
+                onclick="document.getElementById('diagnostic').scrollIntoView({behavior:'smooth'})">Commencer
+                l'analyse</button>
+            <button class="btn-outline"
+                onclick="document.getElementById('modeles').scrollIntoView({behavior:'smooth'})">Voir les
+                modèles</button>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item"><span class="stat-value">3</span><span class="stat-label">Architectures</span></div>
+            <div class="stat-item"><span class="stat-value">96.4%</span><span class="stat-label">Précision max.</span>
+            </div>
+            <div class="stat-item"><span class="stat-value">3</span><span class="stat-label">Classes
+                    diagnostiques</span></div>
+            <div class="stat-item"><span class="stat-value">XAI</span><span class="stat-label">Explicabilité
+                    intégrée</span></div>
+        </div>
+    </div>
+
+    <!-- DIAGNOSTIC -->
+    <section id="diagnostic">
+        <p class="section-tag">Outil clinique</p>
+        <h2 class="section-title">Analyse diagnostique</h2>
+        <p class="section-sub">Chargez une image endoscopique, sélectionnez un modèle, et obtenez une prédiction avec
+            score de confiance.</p>
+
+        <div
+            style="background:rgba(249,200,72,0.08);border:1px solid rgba(249,200,72,0.25);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--amber);margin-bottom:28px;display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:16px;flex-shrink:0;margin-top:1px">⚠</span>
+            <span>Cet outil est destiné à <strong>l'aide au diagnostic</strong> uniquement. Il ne remplace pas
+                l'expertise médicale d'un professionnel de santé qualifié. Toute décision clinique doit être prise par
+                un médecin.</span>
+        </div>
+
+        <!-- PROMPT ZONE: upload + model selector + button, all in one row -->
+        <div
+            style="background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:14px;max-width:780px;">
+
+            <!-- Upload row -->
+            <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+                style="flex-direction:row;padding:16px 20px;gap:18px;text-align:left;align-items:center;border-radius:var(--radius);">
+                <span id="upload-icon" class="upload-icon" style="font-size:32px;">🔬</span>
+                <img id="preview-img" alt="Image uploadée"
+                    style="max-height:64px;border-radius:8px;display:none;object-fit:cover;" />
+                <div style="flex:1;">
+                    <p class="upload-title" id="upload-title" style="font-size:14px;">Glissez ou cliquez pour charger
+                        une image</p>
+                    <p class="upload-hint" id="upload-hint" style="font-size:12px;margin-top:2px;">PNG, JPG · Taille max
+                        10 Mo · Endoscopie digestive</p>
+                </div>
+                <button class="upload-btn"
+                    onclick="event.stopPropagation();document.getElementById('file-input').click()"
+                    style="white-space:nowrap;flex-shrink:0;">Choisir</button>
+                <input type="file" id="file-input" accept="image/*" />
+            </div>
+
+            <!-- Bottom bar: model dropdown + analyze button -->
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+
+                <!-- Dynamic model dropdown -->
+                <div class="model-dropdown-wrap" style="flex:1;min-width:220px;margin-top:0;">
+                    <div class="model-trigger" id="model-trigger" onclick="toggleModelDropdown()">
+                        <span class="model-trigger-icon" id="trigger-icon">⚡</span>
+                        <div class="model-trigger-text">
+                            <div class="model-trigger-name" id="trigger-name">ResNet-50</div>
+                            <div class="model-trigger-sub" id="trigger-sub">Résiduel · 50 couches · rapide</div>
+                        </div>
+                        <span class="model-trigger-badge" id="trigger-badge">F1 95.8%</span>
+                        <span class="model-trigger-arrow">▼</span>
+                    </div>
+                    <div class="model-dropdown" id="model-dropdown">
+                        <div class="model-option selected" data-value="resnet" data-icon="⚡" data-name="ResNet-50"
+                            data-sub="Résiduel · 50 couches · rapide" data-badge="F1 95.8%" onclick="selectModel(this)">
+                            <div class="model-option-check"></div>
+                            <span class="model-option-icon">⚡</span>
+                            <div class="model-option-info">
+                                <div class="model-option-name">ResNet-50</div>
+                                <div class="model-option-desc">Résiduel · 50 couches · rapide</div>
+                            </div>
+                            <span class="model-option-badge">F1 95.8%</span>
+                        </div>
+                        <div class="model-option" data-value="vit" data-icon="🔷" data-name="ViT-B/16"
+                            data-sub="Attention · patches 16×16" data-badge="F1 96.4%" onclick="selectModel(this)">
+                            <div class="model-option-check"></div>
+                            <span class="model-option-icon">🔷</span>
+                            <div class="model-option-info">
+                                <div class="model-option-name">Vision Transformer (ViT-B/16)</div>
+                                <div class="model-option-desc">Attention · patches 16×16</div>
+                            </div>
+                            <span class="model-option-badge">F1 96.4%</span>
+                        </div>
+                        <div class="model-option" data-value="cnn" data-icon="🧱" data-name="CNN Baseline"
+                            data-sub="Convolutif · léger · interprétable" data-badge="F1 88.2%"
+                            onclick="selectModel(this)">
+                            <div class="model-option-check"></div>
+                            <span class="model-option-icon">🧱</span>
+                            <div class="model-option-info">
+                                <div class="model-option-name">CNN Baseline</div>
+                                <div class="model-option-desc">Convolutif · léger · interprétable</div>
+                            </div>
+                            <span class="model-option-badge">F1 88.2%</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden radio for compat -->
+                <input type="radio" name="model" value="resnet" id="r-resnet" checked style="display:none" />
+                <input type="radio" name="model" value="vit" id="r-vit" style="display:none" />
+                <input type="radio" name="model" value="cnn" id="r-cnn" style="display:none" />
+
+                <button class="analyze-btn" id="analyze-btn" disabled onclick="runAnalysis()"
+                    style="width:auto;padding:12px 28px;margin-top:0;flex-shrink:0;">
+                    <span id="btn-txt">⟶ Analyser</span>
+                    <div class="spin" id="btn-spin"
+                        style="display:none;width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff">
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Analyzing indicator (typing dots) -->
+        <div class="analyzing-indicator" id="analyzing-indicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span style="font-size:14px;color:var(--muted);">Analyse en cours…</span>
+        </div>
+
+        <!-- DYNAMIC RESULT AREA — appears below prompt after analysis -->
+        <div id="dynamic-result-area">
+
+            <!-- Result card -->
+            <div class="result-panel" id="result-panel" style="max-width:780px;">
+                <p class="result-header">Résultat du diagnostic</p>
+                <div id="result-content">
+                    <div class="diagnosis-result">
+                        <span style="font-size:13px;color:var(--muted);">Diagnostic principal</span>
+                        <span class="diagnosis-label" id="diag-label">—</span>
+                        <div id="model-tag"
+                            style="font-size:12px;color:var(--muted);background:var(--bg3);padding:3px 10px;border-radius:6px;display:inline-block;">
+                        </div>
+                    </div>
+                    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;" />
+                    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Scores de confiance</p>
+                    <div class="confidence-bars">
+                        <div class="conf-row">
+                            <div class="conf-label"><span>Normal</span><span id="conf-normal">—</span></div>
+                            <div class="conf-track">
+                                <div class="conf-fill fill-normal" id="bar-normal" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="conf-row">
+                            <div class="conf-label"><span>Maladie de Crohn</span><span id="conf-crohn">—</span></div>
+                            <div class="conf-track">
+                                <div class="conf-fill fill-crohn" id="bar-crohn" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="conf-row">
+                            <div class="conf-label"><span>Colite ulcéreuse</span><span id="conf-uc">—</span></div>
+                            <div class="conf-track">
+                                <div class="conf-fill fill-uc" id="bar-uc" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grad-CAM -->
+            <div class="gradcam-section" id="gradcam-section" style="max-width:780px;">
+                <p class="result-header"
+                    style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">
+                    Explicabilité — Grad-CAM</p>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Zones de l'image ayant contribué à la
+                    prédiction</p>
+                <div class="gradcam-imgs">
+                    <div>
+                        <div class="gradcam-thumb"><canvas class="gradcam-canvas" id="cam-original"></canvas></div>
+                        <p class="gradcam-label">Image originale</p>
+                    </div>
+                    <div>
+                        <div class="gradcam-thumb"><canvas class="gradcam-canvas" id="cam-heatmap"></canvas></div>
+                        <p class="gradcam-label">Carte de chaleur</p>
+                    </div>
+                    <div>
+                        <div class="gradcam-thumb"><canvas class="gradcam-canvas" id="cam-overlay"></canvas></div>
+                        <p class="gradcam-label">Superposition</p>
+                    </div>
+                </div>
+                <p style="font-size:13px;font-weight:500;margin:18px 0 10px;">Observations cliniques détectées</p>
+                <div class="findings-list" id="findings-list"></div>
+            </div>
+
+        </div><!-- /dynamic-result-area -->
+
+    </section>
+
+    <!-- MODELS -->
+    <section id="modeles">
+        <p class="section-tag">Architecture & Performances</p>
+        <h2 class="section-title">Modèles disponibles</h2>
+        <p class="section-sub">Cliquez sur un modèle pour afficher l'architecture détaillée, les courbes d'apprentissage
+            et les métriques par classe.</p>
+
+        <div class="models-grid">
+            <div class="model-card" id="card-cnn" onclick="showModelDetail('cnn')">
+                <div class="model-icon" style="background:rgba(249,200,72,.12);font-size:22px;">🧱</div>
+                <p class="model-card-name">CNN Baseline</p>
+                <p class="model-card-type">Réseau convolutif standard · 8 couches</p>
+                <div class="model-metrics">
+                    <div class="metric-pill"><span class="metric-name">Précision</span><span
+                            class="metric-val ok">87.6%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Rappel</span><span
+                            class="metric-val ok">88.9%</span></div>
+                    <div class="metric-pill"><span class="metric-name">F1-Score</span><span
+                            class="metric-val ok">88.2%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Params</span><span class="metric-val">4.2M</span>
+                    </div>
+                </div>
+            </div>
+            <div class="model-card" id="card-resnet" onclick="showModelDetail('resnet')">
+                <div class="model-icon" style="background:rgba(59,145,247,.12);font-size:22px;">⚡</div>
+                <p class="model-card-name">ResNet-50</p>
+                <p class="model-card-type">Réseau résiduel · 50 couches · ImageNet</p>
+                <div class="model-metrics">
+                    <div class="metric-pill"><span class="metric-name">Précision</span><span
+                            class="metric-val good">95.2%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Rappel</span><span
+                            class="metric-val good">96.4%</span></div>
+                    <div class="metric-pill"><span class="metric-name">F1-Score</span><span
+                            class="metric-val good">95.8%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Params</span><span
+                            class="metric-val">25.6M</span></div>
+                </div>
+            </div>
+            <div class="model-card" id="card-vit" onclick="showModelDetail('vit')">
+                <div class="model-icon" style="background:rgba(45,212,160,.12);font-size:22px;">🔷</div>
+                <p class="model-card-name">ViT-B/16</p>
+                <p class="model-card-type">Vision Transformer · 12 têtes d'attention</p>
+                <div class="model-metrics">
+                    <div class="metric-pill"><span class="metric-name">Précision</span><span
+                            class="metric-val good">96.1%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Rappel</span><span
+                            class="metric-val good">96.7%</span></div>
+                    <div class="metric-pill"><span class="metric-name">F1-Score</span><span
+                            class="metric-val good">96.4%</span></div>
+                    <div class="metric-pill"><span class="metric-name">Params</span><span class="metric-val">86M</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="model-detail">
+            <div class="detail-header">
+                <div>
+                    <p id="detail-tag" class="section-tag" style="margin-bottom:4px;">Architecture</p>
+                    <h3 class="detail-title" id="detail-title">—</h3>
+                </div>
+                <button class="detail-close" onclick="closeModelDetail()">✕ Fermer</button>
+            </div>
+
+            <div class="detail-grid">
+                <div>
+                    <div class="detail-chart-box">
+                        <h4>Courbe d'apprentissage — Loss</h4>
+                        <div class="chart-wrap"><canvas id="loss-chart"></canvas></div>
+                    </div>
+                    <div class="detail-chart-box" style="margin-top:14px;">
+                        <h4>Précision par époque</h4>
+                        <div class="chart-wrap"><canvas id="acc-chart"></canvas></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="detail-chart-box" style="margin-bottom:14px;">
+                        <h4>Architecture des couches</h4>
+                        <div id="arch-layers" class="arch-block"></div>
+                    </div>
+                    <div class="detail-chart-box">
+                        <h4>Métriques par classe</h4>
+                        <div class="metrics-full">
+                            <table id="metrics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Classe</th>
+                                        <th>Précision</th>
+                                        <th>Rappel</th>
+                                        <th>F1-Score</th>
+                                        <th>Support</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="metrics-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact">
+        <p class="section-tag">Collaboration & Retours</p>
+        <h2 class="section-title">Contact</h2>
+        <p class="section-sub">Questions, collaborations médicales ou retours sur les performances du modèle.</p>
+
+        <div class="contact-grid">
+            <div class="contact-info">
+                <p>Ce projet est développé dans un cadre académique en collaboration avec des professionnels de santé.
+                    Nous accueillons les retours cliniques pour améliorer la robustesse des modèles.</p>
+                <div class="contact-links">
+                    <a href="https://github.com" target="_blank" class="contact-link">
+                        <div class="contact-link-icon" style="background:rgba(255,255,255,0.07);font-size:20px;">⌨</div>
+                        <div class="contact-link-text">
+                            <span class="contact-link-label">Code source GitHub</span>
+                            <span class="contact-link-sub">Notebooks, modèles, instructions</span>
+                        </div>
+                        <span style="color:var(--muted);font-size:14px;">↗</span>
+                    </a>
+                    <a href="mailto:contact@endoai.fr" class="contact-link">
+                        <div class="contact-link-icon" style="background:rgba(59,145,247,0.1);font-size:18px;">✉</div>
+                        <div class="contact-link-text">
+                            <span class="contact-link-label">contact@endoai.fr</span>
+                            <span class="contact-link-sub">Réponse sous 48h ouvrées</span>
+                        </div>
+                    </a>
+                    <a href="#" class="contact-link">
+                        <div class="contact-link-icon" style="background:rgba(45,212,160,0.1);font-size:18px;">📄</div>
+                        <div class="contact-link-text">
+                            <span class="contact-link-label">Rapport technique (PDF)</span>
+                            <span class="contact-link-sub">Méthodologie complète</span>
+                        </div>
+                        <span style="color:var(--muted);font-size:14px;">↓</span>
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <div id="form-success" class="form-success" style="margin-bottom:14px;">
+                    ✓ Message envoyé ! Nous reviendrons vers vous rapidement.
+                </div>
+                <div class="contact-form">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label>Prénom</label>
+                            <input type="text" id="f-prenom" placeholder="Marie" />
+                        </div>
+                        <div class="form-group">
+                            <label>Nom</label>
+                            <input type="text" id="f-nom" placeholder="Dupont" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email professionnel</label>
+                        <input type="email" id="f-email" placeholder="m.dupont@chu-nancy.fr" />
+                    </div>
+                    <div class="form-group">
+                        <label>Profil</label>
+                        <select id="f-profil">
+                            <option value="">Sélectionner...</option>
+                            <option>Gastro-entérologue</option>
+                            <option>Médecin généraliste</option>
+                            <option>Chercheur en IA médicale</option>
+                            <option>Étudiant en médecine</option>
+                            <option>Autre professionnel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="f-message" rows="4"
+                            placeholder="Retours cliniques, questions sur la méthodologie, proposition de collaboration..."></textarea>
+                    </div>
+                    <button class="submit-btn" onclick="submitForm()">Envoyer le message</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-links">
+            <a href="#diagnostic">Diagnostic</a>
+            <a href="#modeles">Modèles</a>
+            <a href="#contact">Contact</a>
+            <a href="https://github.com" target="_blank">GitHub ↗</a>
+            <a href="#">Rapport PDF ↓</a>
+        </div>
+        <p>EndoAI — Projet de classification des MICI par deep learning · Outil d'aide au diagnostic uniquement</p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
