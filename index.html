@@ -179,7 +179,7 @@
 
             <!-- Result card -->
             <div class="result-panel" id="result-panel" style="max-width:780px;">
-                <p class="result-header">Résultat du diagnostic</p>
+                <p class="result-header" id="result-header-text">Résultat du diagnostic</p>
                 <div id="result-content">
                     <div class="diagnosis-result">
                         <span style="font-size:13px;color:var(--muted);">Diagnostic principal</span>
@@ -211,6 +211,14 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Error content (hidden by default) -->
+                <div id="error-content" style="display:none; text-align:center; padding: 20px 10px;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">⚠️</div>
+                    <h3 style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Impossible d'analyser l'image
+                    </h3>
+                    <p id="error-message-text" style="font-size: 14px; color: var(--muted); line-height: 1.5;"></p>
+                </div>
             </div>
 
             <!-- Grad-CAM -->
@@ -234,8 +242,6 @@
                         <p class="gradcam-label">Superposition</p>
                     </div>
                 </div>
-                <p style="font-size:13px;font-weight:500;margin:18px 0 10px;">Observations cliniques détectées</p>
-                <div class="findings-list" id="findings-list"></div>
             </div>
 
         </div><!-- /dynamic-result-area -->
@@ -355,7 +361,7 @@
                 <p>Ce projet est développé dans un cadre académique en collaboration avec des professionnels de santé.
                     Nous accueillons les retours cliniques pour améliorer la robustesse des modèles.</p>
                 <div class="contact-links">
-                    <a href="https://github.com" target="_blank" class="contact-link">
+                    <a href="https://github.com/anne7076/endoAI" target="_blank" class="contact-link">
                         <div class="contact-link-icon" style="background:rgba(255,255,255,0.07);font-size:20px;">⌨</div>
                         <div class="contact-link-text">
                             <span class="contact-link-label">Code source GitHub</span>
@@ -363,14 +369,14 @@
                         </div>
                         <span style="color:var(--muted);font-size:14px;">↗</span>
                     </a>
-                    <a href="mailto:contact@endoai.fr" class="contact-link">
+                    <a href="mailto:hametanne123@gmail.com" class="contact-link">
                         <div class="contact-link-icon" style="background:rgba(59,145,247,0.1);font-size:18px;">✉</div>
                         <div class="contact-link-text">
-                            <span class="contact-link-label">contact@endoai.fr</span>
+                            <span class="contact-link-label">hametanne123@gmail.com</span>
                             <span class="contact-link-sub">Réponse sous 48h ouvrées</span>
                         </div>
                     </a>
-                    <a href="#" class="contact-link">
+                    <a href="rapport_technique.pdf" download="rapport_technique.pdf" class="contact-link">
                         <div class="contact-link-icon" style="background:rgba(45,212,160,0.1);font-size:18px;">📄</div>
                         <div class="contact-link-text">
                             <span class="contact-link-label">Rapport technique (PDF)</span>
@@ -429,12 +435,19 @@
             <a href="#modeles">Modèles</a>
             <a href="#contact">Contact</a>
             <a href="https://github.com" target="_blank">GitHub ↗</a>
-            <a href="#">Rapport PDF ↓</a>
+            <a href="rapport_technique.pdf" download="rapport_technique.pdf">Rapport PDF ↓</a>
         </div>
         <p>EndoAI — Projet de classification des MICI par deep learning · Outil d'aide au diagnostic uniquement</p>
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+            // Remplacez "VOTRE_CLE_PUBLIQUE_EMAILJS" par votre vraie clé publique MailJS !
+            emailjs.init({ publicKey: "VOTRE_CLE_PUBLIQUE_EMAILJS" });
+        })();
+    </script>
     <script src="script.js"></script>
 
 </body>

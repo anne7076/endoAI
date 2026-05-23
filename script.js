@@ -124,7 +124,7 @@ document.addEventListener('click', e =>
 });
 
 // ── ANALYSIS ──
-function runAnalysis()
+async function runAnalysis()
 {
     if (!uploadedFile) return;
     const btn = document.getElementById('analyze-btn');
@@ -138,28 +138,100 @@ function runAnalysis()
     ra.style.display = 'none';
     document.getElementById('analyzing-indicator').classList.add('active');
 
-    setTimeout(() =>
+    try
     {
-        const models = {
-            resnet: { name: 'ResNet-50', normal: 0.05, crohn: 0.82, uc: 0.13, diag: 'crohn' },
-            vit: { name: 'ViT-B/16', normal: 0.04, crohn: 0.79, uc: 0.17, diag: 'crohn' },
-            cnn: { name: 'CNN Baseline', normal: 0.11, crohn: 0.71, uc: 0.18, diag: 'crohn' },
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        formData.append('modelKey', selectedModel);
+
+        const response = await fetch('http://localhost:8000/predict', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok)
+        {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const models_info = {
+            resnet: 'ResNet-50',
+            vit: 'ViT-B/16',
+            cnn: 'CNN Baseline',
         };
-        const r = models[ selectedModel ];
+
+        const result = {
+            name: models_info[ data.model_used ] || data.model_used,
+            normal: data.scores.normal,
+            crohn: data.scores.crohn,
+            uc: data.scores.uc,
+            diag: data.diagnosis,
+            gradcam_url: data.gradcam_url ? 'http://localhost:8000' + data.gradcam_url : null
+        };
+
+        // Hide indicator
+        document.getElementById('analyzing-indicator').classList.remove('active');
+        showResults(result);
+
+    } catch (error)
+    {
+        console.error("Erreur de prédiction:", error);
 
         // Hide indicator
         document.getElementById('analyzing-indicator').classList.remove('active');
 
-        showResults(r);
-
+        // Afficher l'erreur dans l'UI proprement
+        showError(error.message);
+    } finally
+    {
         btn.disabled = false;
         document.getElementById('btn-txt').style.display = 'inline';
         document.getElementById('btn-spin').style.display = 'none';
-    }, 2200);
+    }
+}
+
+function showError(message)
+{
+    const ra = document.getElementById('dynamic-result-area');
+    const resultContent = document.getElementById('result-content');
+    const errorContent = document.getElementById('error-content');
+    const gradcamSection = document.getElementById('gradcam-section');
+    const headerText = document.getElementById('result-header-text');
+    const errorMsgEl = document.getElementById('error-message-text');
+
+    // Mettre à jour le texte
+    headerText.textContent = "Erreur d'analyse";
+    headerText.style.color = "var(--red)"; // Optional styling for the header
+    errorMsgEl.textContent = message;
+
+    // Basculer l'affichage (Cacher résultats/GradCAM, Afficher l'erreur)
+    resultContent.style.display = 'none';
+    gradcamSection.style.display = 'none';
+    errorContent.style.display = 'block';
+
+    // Afficher la section dynamique
+    ra.style.display = 'flex';
+    ra.classList.add('visible');
+
+    setTimeout(() => ra.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
 function showResults(r)
 {
+    const resultContent = document.getElementById('result-content');
+    const errorContent = document.getElementById('error-content');
+    const gradcamSection = document.getElementById('gradcam-section');
+    const headerText = document.getElementById('result-header-text');
+
+    // Réinitialiser l'état d'erreur
+    headerText.textContent = "Résultat du diagnostic";
+    headerText.style.color = "var(--muted)";
+    resultContent.style.display = 'block';
+    gradcamSection.style.display = 'block';
+    errorContent.style.display = 'none';
+
     const labels = { normal: 'Normal', crohn: 'Maladie de Crohn', uc: 'Colite ulcéreuse' };
     const classes = { normal: 'diag-normal', crohn: 'diag-crohn', uc: 'diag-uc' };
     const el = document.getElementById('diag-label');
@@ -185,56 +257,39 @@ function showResults(r)
         document.getElementById('bar-uc').style.width = (r.uc * 100) + '%';
     }, 60);
 
-    drawGradCAM();
-    showFindings();
+    drawGradCAM(r);
 
     // Smooth scroll to result
     setTimeout(() => ra.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 
-// ── GRAD-CAM SIMULATION ──
-function drawGradCAM()
+// ── GRAD-CAM SIMULATION/RENDERING ──
+function drawGradCAM(r)
 {
     const imgEl = document.getElementById('preview-img');
     drawOriginal(imgEl);
-    drawHeatmap();
-    drawOverlay(imgEl);
+
+    if (r.gradcam_url)
+    {
+        // Backend returned a generated Grad-CAM
+        drawOverlayFromURL(r.gradcam_url);
+    } else
+    {
+        // Fallback or mock : do not generate gradcam via JS
+        clearHeatmap();
+        drawOverlayEmpty(imgEl);
+    }
 }
 
-function drawOriginal(imgEl)
-{
-    const c = document.getElementById('cam-original');
-    const ctx = c.getContext('2d');
-    c.width = 200; c.height = 150;
-    const img = new Image();
-    img.onload = () => ctx.drawImage(img, 0, 0, 200, 150);
-    img.src = imgEl.src;
-}
-
-function drawHeatmap()
+function clearHeatmap()
 {
     const c = document.getElementById('cam-heatmap');
     const ctx = c.getContext('2d');
     c.width = 200; c.height = 150;
-    ctx.fillStyle = '#0a0f15';
-    ctx.fillRect(0, 0, 200, 150);
-    const blobs = [
-        { x: 90, y: 60, r: 50, s: 'rgba(239,91,91,0.9)' },
-        { x: 130, y: 90, r: 40, s: 'rgba(249,200,72,0.75)' },
-        { x: 60, y: 100, r: 30, s: 'rgba(249,200,72,0.5)' },
-        { x: 155, y: 50, r: 25, s: 'rgba(74,222,128,0.4)' },
-    ];
-    blobs.forEach(b =>
-    {
-        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-        g.addColorStop(0, b.s);
-        g.addColorStop(1, 'transparent');
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fillStyle = g; ctx.fill();
-    });
+    ctx.clearRect(0, 0, 200, 150);
 }
 
-function drawOverlay(imgEl)
+function drawOverlayEmpty(imgEl)
 {
     const c = document.getElementById('cam-overlay');
     const ctx = c.getContext('2d');
@@ -243,31 +298,50 @@ function drawOverlay(imgEl)
     img.onload = () =>
     {
         ctx.drawImage(img, 0, 0, 200, 150);
-        ctx.globalAlpha = 0.55;
-        const hm = document.getElementById('cam-heatmap');
-        ctx.drawImage(hm, 0, 0);
-        ctx.globalAlpha = 1;
     };
     img.src = imgEl.src;
 }
 
-// ── FINDINGS ──
-function showFindings()
+function drawOriginal(imgEl)
 {
-    const fl = document.getElementById('findings-list');
-    const items = [
-        { sev: 'high', title: 'Ulcérations serpigineuses', desc: 'Zone 1 — Centre de l\'image. Lésions profondes caractéristiques de la maladie de Crohn détectées avec une activation élevée (78%).' },
-        { sev: 'med', title: 'Aspect en pavé cobblestone', desc: 'Zone 2 — Quadrant supérieur droit. Motif muqueux typique des MICI inflammatoires actives (61%).' },
-        { sev: 'low', title: 'Muqueuse saine adjacente', desc: 'Zone 3 — Bords. Régions de référence sans activité inflammatoire détectée (22%).' },
-    ];
-    const colors = { high: 'var(--red)', med: 'var(--amber)', low: 'var(--teal)' };
-    fl.innerHTML = items.map(i => `
-    <div class="finding-item finding-${i.sev}">
-      <div class="finding-dot" style="background:${colors[ i.sev ]}"></div>
-      <div class="finding-text"><strong>${i.title}</strong>${i.desc}</div>
-    </div>
-  `).join('');
+    const c = document.getElementById('cam-original');
+    const ctx = c.getContext('2d');
+    c.width = 200; c.height = 150;
+
+    // Draw the image nicely cropped or scaled to fit 200x150
+    const img = new Image();
+    img.onload = () =>
+    {
+        // Simple scale to fit (or stretch)
+        ctx.drawImage(img, 0, 0, 200, 150);
+    };
+    img.src = imgEl.src;
 }
+
+function drawOverlayFromURL(url)
+{
+    const c = document.getElementById('cam-overlay');
+    const ctx = c.getContext('2d');
+    c.width = 200; c.height = 150;
+
+    // Clear heatmap mock canvas
+    const hc = document.getElementById('cam-heatmap');
+    const hctx = hc.getContext('2d');
+    hc.width = 200; hc.height = 150;
+    hctx.clearRect(0, 0, hc.width, hc.height);
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // Avoid CORS canvas issues
+    img.onload = () =>
+    {
+        ctx.drawImage(img, 0, 0, 200, 150);
+
+        // Populate the heatmap canvas with the same image temporarily for the UI
+        hctx.drawImage(img, 0, 0, 200, 150);
+    };
+    img.src = url + "?t=" + new Date().getTime(); // Prevent caching old heatmaps
+}
+
 
 // ── MODEL DETAIL ──
 const modelData = {
@@ -406,12 +480,62 @@ function closeModelDetail()
 }
 
 // ── CONTACT FORM ──
-function submitForm()
+async function submitForm()
 {
     const fields = [ 'f-prenom', 'f-nom', 'f-email', 'f-message' ];
     const empty = fields.some(id => !document.getElementById(id).value.trim());
     if (empty) { alert('Veuillez remplir tous les champs requis.'); return; }
-    document.getElementById('form-success').style.display = 'block';
-    fields.forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-profil').value = '';
+
+    // UI state: loading
+    const btn = document.querySelector('.submit-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Envoi en cours...";
+    btn.style.opacity = "0.7";
+
+    const templateParams = {
+        prenom: document.getElementById('f-prenom').value,
+        nom: document.getElementById('f-nom').value,
+        email: document.getElementById('f-email').value,
+        profil: document.getElementById('f-profil').value,
+        message: document.getElementById('f-message').value
+    };
+
+    const statusDiv = document.getElementById('form-success');
+
+    try
+    {
+        // Envoi E-mail avec EmailJS
+        // (Remplacez par votre vrai Service ID et Template ID EmailJS)
+        await emailjs.send('SERVICE_ID_A_REMPLACER', 'TEMPLATE_ID_A_REMPLACER', templateParams);
+
+        // UI state: success
+        statusDiv.style.display = 'block';
+        statusDiv.style.backgroundColor = "rgba(45,212,160,0.1)";
+        statusDiv.style.color = "var(--green)";
+        statusDiv.style.border = "1px solid rgba(45,212,160,0.2)";
+        statusDiv.style.padding = "12px";
+        statusDiv.style.borderRadius = "8px";
+        statusDiv.textContent = "✓ Message envoyé ! Nous reviendrons vers vous rapidement.";
+
+        fields.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('f-profil').value = '';
+    } catch (error)
+    {
+        console.error('EmailJS error:', error);
+
+        // UI state: error styling
+        statusDiv.style.display = 'block';
+        statusDiv.style.backgroundColor = "rgba(239,91,91,0.08)";
+        statusDiv.style.color = "var(--red)";
+        statusDiv.style.border = "1px solid rgba(239,91,91,0.25)";
+        statusDiv.style.padding = "12px";
+        statusDiv.style.borderRadius = "8px";
+        statusDiv.textContent = "⚠️ Une erreur est survenue lors de l'envoi du message. Veuillez réessayer.";
+    } finally
+    {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.opacity = "1";
+    }
 }
