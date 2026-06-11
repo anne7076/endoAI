@@ -27,18 +27,21 @@ Le projet est conçu de manière modulaire et statique côté client (Front-end)
    ```bash
    git clone https://github.com/votre-nom/endoai.git
    cd endoai
+   python -m pip install -r backend/requirements.txt
    ```
 
 2. **Lancer l'application**
    Il suffit d'ouvrir le fichier `index.html` dans n'importe quel navigateur web moderne (Chrome, Firefox, Edge, Safari).
+   
    ```bash
-   start index.html
+   python app.py
    ```
 
 ## 📂 Structure du Projet
 
 ```text
 📁 /
+├── 📁 backend    
 ├── 📄 index.html      # Structure principale de la page web (HTML)
 ├── 📄 style.css       # Styles, design et thèmes (Clair/Sombre) (S'il a été séparé)
 ├── 📄 script.js       # Logique applicative, gestion des modèles et graphiques
