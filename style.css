@@ -631,17 +631,98 @@ section {
     letter-spacing: -.3px;
 }
 
-.diag-normal {
+.diag-normal,
+.sev-level-0 {
     color: var(--green);
 }
 
-.diag-crohn {
+.diag-crohn,
+.sev-level-1 {
+    color: var(--teal);
+}
+
+.diag-uc,
+.sev-level-2 {
     color: var(--amber);
 }
 
-.diag-uc {
+.sev-level-3 {
     color: var(--red);
 }
+
+/* SÉLECTEUR DE MALADIE */
+.disease-select {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.disease-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: var(--bg3);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.disease-option:hover {
+    border-color: var(--accent);
+}
+
+.disease-option.selected {
+    border-color: var(--accent);
+    background: rgba(59, 145, 247, 0.08);
+}
+
+.disease-option-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.disease-option-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.disease-option-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.disease-option-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+/* SÉVÉRITÉ - badge principal */
+.severity-badge {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    letter-spacing: -.3px;
+    display: inline-block;
+}
+
+.severity-scale-name {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+/* SÉVÉRITÉ - barres dynamiques (jusqu'à 7 niveaux) */
+.fill-sev-0 { background: var(--green); }
+.fill-sev-1 { background: var(--teal); }
+.fill-sev-2 { background: var(--accent); }
+.fill-sev-3 { background: var(--amber); }
+.fill-sev-4 { background: #f59e42; }
+.fill-sev-5 { background: #f9844a; }
+.fill-sev-6 { background: var(--red); }
 
 /* CONFIDENCE BAR */
 .confidence-bars {
