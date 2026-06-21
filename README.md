@@ -46,7 +46,6 @@ pip install -r requirements.txt
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
  
 # 6. Ouvrir le frontend dans le navigateur : Ouvrir index.html 
-
 ```
 
 ## 📂 Structure du Projet
