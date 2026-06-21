@@ -5,12 +5,12 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
 
-**EndoAI** est une application web interactive conçue pour assister les professionnels de santé dans le diagnostic des Maladies Inflammatoires Chroniques de l'Intestin (MICI) à partir d'images d'endoscopie. L'outil repose sur des modèles d'Intelligence Artificielle avancés pour distinguer la **maladie de Crohn**, la **colite ulcéreuse** et un **état normal**.
+**EndoAI** est une application web interactive conçue pour assister les professionnels de santé dans le diagnostic des Maladies Inflammatoires Chroniques de l'Intestin (MICI) à partir d'images d'endoscopie. L'outil repose sur des modèles d'Intelligence Artificielle avancés pour distinguer les niveau de severité  de la maladie de **CrohnIPI**, la **colite ulcéreuse** et ceux de **LIMUC**.
 
 ## ✨ Fonctionnalités Principales
 
-- **Analyse Multi-Modèles** : Choisissez entre trois architectures selon vos besoins :
-  - **ResNet-50** : Précision élevée (F1-Score 95.8%) et temps d'inférence rapide.
+- **Analyse Multi-Modèles** : Choisissez entre deux architectures selon vos besoins :
+  - **ResNet-50** : Précision élevée (F1-Score 80%) et temps d'inférence rapide.
   - **Vision Transformer (ViT-B/16)** : Architecture basée sur l'attention offrant les meilleures performances globales (F1-Score 96.4%).
 - **Explicabilité (XAI - Grad-CAM)** : L'IA ne donne pas qu'un résultat. Elle surligne les zones de l'image (cartes de chaleur) qui ont conduit à sa prédiction, offrant ainsi aux médecins une transparence totale.
 - **Tableau de Bord des Modèles** : Visualisation dynamique (via _Chart.js_) des courbes d'apprentissage (Loss/Accuracy) et métriques détaillées de chaque modèle.
