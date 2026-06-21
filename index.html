@@ -46,8 +46,9 @@
             Diagnostic des <em>maladies inflammatoires</em> par imagerie endoscopique
         </h1>
         <p class="hero-desc">
-            Analysez des images d'endoscopie à l'aide de modèles d'IA de pointe pour distinguer la maladie de Crohn, la
-            colite ulcéreuse et un état normal. Résultats en quelques secondes, avec explication visuelle.
+            Sélectionnez une pathologie — maladie de Crohn ou colite ulcéreuse — et analysez une image d'endoscopie à
+            l'aide de modèles d'IA de pointe pour évaluer son niveau de sévérité endoscopique. Résultats en quelques
+            secondes, avec explication visuelle.
         </p>
         <div class="hero-btns">
             <button class="btn-primary"
@@ -58,11 +59,12 @@
                 modèles</button>
         </div>
         <div class="hero-stats">
-            <div class="stat-item"><span class="stat-value">3</span><span class="stat-label">Architectures</span></div>
+            <div class="stat-item"><span class="stat-value">2</span><span class="stat-label">Pathologies (Crohn /
+                    UC)</span></div>
             <div class="stat-item"><span class="stat-value">96.4%</span><span class="stat-label">Précision max.</span>
             </div>
-            <div class="stat-item"><span class="stat-value">3</span><span class="stat-label">Classes
-                    diagnostiques</span></div>
+            <div class="stat-item"><span class="stat-value">4–7</span><span class="stat-label">Niveaux de
+                    sévérité</span></div>
             <div class="stat-item"><span class="stat-value">XAI</span><span class="stat-label">Explicabilité
                     intégrée</span></div>
         </div>
@@ -72,8 +74,8 @@
     <section id="diagnostic">
         <p class="section-tag">Outil clinique</p>
         <h2 class="section-title">Analyse diagnostique</h2>
-        <p class="section-sub">Chargez une image endoscopique, sélectionnez un modèle, et obtenez une prédiction avec
-            score de confiance.</p>
+        <p class="section-sub">Choisissez la pathologie à évaluer, chargez une image endoscopique, sélectionnez un
+            modèle, et obtenez une notation de sévérité avec score de confiance.</p>
 
         <div
             style="background:rgba(249,200,72,0.08);border:1px solid rgba(249,200,72,0.25);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--amber);margin-bottom:28px;display:flex;align-items:flex-start;gap:10px;">
@@ -83,9 +85,32 @@
                 un médecin.</span>
         </div>
 
-        <!-- PROMPT ZONE: upload + model selector + button, all in one row -->
+        <!-- PROMPT ZONE: disease selector + upload + model selector + button -->
         <div
             style="background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:14px;max-width:780px;">
+
+            <!-- Disease selector -->
+            <div>
+                <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Quelle maladie souhaitez-vous évaluer
+                    ?</p>
+                <div class="disease-select">
+                    <div class="disease-option selected" data-disease="crohn" onclick="selectDisease(this)">
+                        <span class="disease-option-icon">🟠</span>
+                        <div class="disease-option-text">
+                            <span class="disease-option-name">Maladie de Crohn</span>
+                            <span class="disease-option-sub">Classification des lésions (N, E, O, S, AU, U3-10,
+                                U&gt;10)</span>
+                        </div>
+                    </div>
+                    <div class="disease-option" data-disease="uc" onclick="selectDisease(this)">
+                        <span class="disease-option-icon">🟡</span>
+                        <div class="disease-option-text">
+                            <span class="disease-option-name">Colite ulcéreuse (UC)</span>
+                            <span class="disease-option-sub">Score de Mayo endoscopique (0 à 3)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Upload row -->
             <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
@@ -140,23 +165,11 @@
                             </div>
                             <span class="model-option-badge">F1 96.4%</span>
                         </div>
-                        <div class="model-option" data-value="cnn" data-icon="🧱" data-name="CNN Baseline"
-                            data-sub="Convolutif · léger · interprétable" data-badge="F1 88.2%"
-                            onclick="selectModel(this)">
-                            <div class="model-option-check"></div>
-                            <span class="model-option-icon">🧱</span>
-                            <div class="model-option-info">
-                                <div class="model-option-name">CNN Baseline</div>
-                                <div class="model-option-desc">Convolutif · léger · interprétable</div>
-                            </div>
-                            <span class="model-option-badge">F1 88.2%</span>
-                        </div>
                     </div>
                 </div>
                 <!-- Hidden radio for compat -->
                 <input type="radio" name="model" value="resnet" id="r-resnet" checked style="display:none" />
                 <input type="radio" name="model" value="vit" id="r-vit" style="display:none" />
-                <input type="radio" name="model" value="cnn" id="r-cnn" style="display:none" />
 
                 <button class="analyze-btn" id="analyze-btn" disabled onclick="runAnalysis()"
                     style="width:auto;padding:12px 28px;margin-top:0;flex-shrink:0;">
@@ -182,33 +195,17 @@
                 <p class="result-header" id="result-header-text">Résultat du diagnostic</p>
                 <div id="result-content">
                     <div class="diagnosis-result">
-                        <span style="font-size:13px;color:var(--muted);">Diagnostic principal</span>
-                        <span class="diagnosis-label" id="diag-label">—</span>
+                        <span style="font-size:13px;color:var(--muted);" id="result-scale-name">Niveau de
+                            sévérité</span>
+                        <span class="severity-badge" id="severity-label">—</span>
                         <div id="model-tag"
                             style="font-size:12px;color:var(--muted);background:var(--bg3);padding:3px 10px;border-radius:6px;display:inline-block;">
                         </div>
                     </div>
                     <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;" />
-                    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Scores de confiance</p>
-                    <div class="confidence-bars">
-                        <div class="conf-row">
-                            <div class="conf-label"><span>Normal</span><span id="conf-normal">—</span></div>
-                            <div class="conf-track">
-                                <div class="conf-fill fill-normal" id="bar-normal" style="width:0%"></div>
-                            </div>
-                        </div>
-                        <div class="conf-row">
-                            <div class="conf-label"><span>Maladie de Crohn</span><span id="conf-crohn">—</span></div>
-                            <div class="conf-track">
-                                <div class="conf-fill fill-crohn" id="bar-crohn" style="width:0%"></div>
-                            </div>
-                        </div>
-                        <div class="conf-row">
-                            <div class="conf-label"><span>Colite ulcéreuse</span><span id="conf-uc">—</span></div>
-                            <div class="conf-track">
-                                <div class="conf-fill fill-uc" id="bar-uc" style="width:0%"></div>
-                            </div>
-                        </div>
+                    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Scores de confiance par niveau</p>
+                    <div class="confidence-bars" id="severity-bars">
+                        <!-- Rempli dynamiquement par script.js selon la maladie sélectionnée -->
                     </div>
                 </div>
 
@@ -256,48 +253,33 @@
             et les métriques par classe.</p>
 
         <div class="models-grid">
-            <div class="model-card" id="card-cnn" onclick="showModelDetail('cnn')">
-                <div class="model-icon" style="background:rgba(249,200,72,.12);font-size:22px;">🧱</div>
-                <p class="model-card-name">CNN Baseline</p>
-                <p class="model-card-type">Réseau convolutif standard · 8 couches</p>
-                <div class="model-metrics">
-                    <div class="metric-pill"><span class="metric-name">Précision</span><span
-                            class="metric-val ok">87.6%</span></div>
-                    <div class="metric-pill"><span class="metric-name">Rappel</span><span
-                            class="metric-val ok">88.9%</span></div>
-                    <div class="metric-pill"><span class="metric-name">F1-Score</span><span
-                            class="metric-val ok">88.2%</span></div>
-                    <div class="metric-pill"><span class="metric-name">Params</span><span class="metric-val">4.2M</span>
-                    </div>
-                </div>
-            </div>
             <div class="model-card" id="card-resnet" onclick="showModelDetail('resnet')">
                 <div class="model-icon" style="background:rgba(59,145,247,.12);font-size:22px;">⚡</div>
                 <p class="model-card-name">ResNet-50</p>
                 <p class="model-card-type">Réseau résiduel · 50 couches · ImageNet</p>
                 <div class="model-metrics">
                     <div class="metric-pill"><span class="metric-name">Précision</span><span
-                            class="metric-val good">95.2%</span></div>
+                            class="metric-val good" id="pill-resnet-precision">—</span></div>
                     <div class="metric-pill"><span class="metric-name">Rappel</span><span
-                            class="metric-val good">96.4%</span></div>
+                            class="metric-val good" id="pill-resnet-recall">—</span></div>
                     <div class="metric-pill"><span class="metric-name">F1-Score</span><span
-                            class="metric-val good">95.8%</span></div>
+                            class="metric-val good" id="pill-resnet-f1">—</span></div>
                     <div class="metric-pill"><span class="metric-name">Params</span><span
-                            class="metric-val">25.6M</span></div>
+                            class="metric-val" id="pill-resnet-params">—</span></div>
                 </div>
             </div>
             <div class="model-card" id="card-vit" onclick="showModelDetail('vit')">
                 <div class="model-icon" style="background:rgba(45,212,160,.12);font-size:22px;">🔷</div>
-                <p class="model-card-name">ViT-B/16</p>
+                <p class="model-card-name">ViT-S/16</p>
                 <p class="model-card-type">Vision Transformer · 12 têtes d'attention</p>
                 <div class="model-metrics">
                     <div class="metric-pill"><span class="metric-name">Précision</span><span
-                            class="metric-val good">96.1%</span></div>
+                            class="metric-val good" id="pill-vit-precision">—</span></div>
                     <div class="metric-pill"><span class="metric-name">Rappel</span><span
-                            class="metric-val good">96.7%</span></div>
+                            class="metric-val good" id="pill-vit-recall">—</span></div>
                     <div class="metric-pill"><span class="metric-name">F1-Score</span><span
-                            class="metric-val good">96.4%</span></div>
-                    <div class="metric-pill"><span class="metric-name">Params</span><span class="metric-val">86M</span>
+                            class="metric-val good" id="pill-vit-f1">—</span></div>
+                    <div class="metric-pill"><span class="metric-name">Params</span><span class="metric-val" id="pill-vit-params">—</span>
                     </div>
                 </div>
             </div>
@@ -324,10 +306,6 @@
                     </div>
                 </div>
                 <div>
-                    <div class="detail-chart-box" style="margin-bottom:14px;">
-                        <h4>Architecture des couches</h4>
-                        <div id="arch-layers" class="arch-block"></div>
-                    </div>
                     <div class="detail-chart-box">
                         <h4>Métriques par classe</h4>
                         <div class="metrics-full">
@@ -428,7 +406,7 @@
         </div>
     </section>
 
-    <!-- FOOTER -->
+    <!-- FOOTER -->s
     <footer>
         <div class="footer-links">
             <a href="#diagnostic">Diagnostic</a>
