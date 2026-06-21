@@ -37,7 +37,8 @@ venv\Scripts\activate       	# Windows
 pip install -r requirements.txt
  
 # 4. Placer les modèles entraînés dans le répertoire models/
-# (Télécharger depuis le lien fourni dans le README du dépôt)
+# Télécharger les 4 fichiers .pth depuis le Google Drive public :
+# 👉 TODO : coller ici le lien Google Drive public
 mkdir models 
 # cp /chemin/vers/best_resnet50_limuc.pth models/
  
@@ -62,6 +63,22 @@ endoai/
 ├── LICENSE         # Licence MIT du code et des poids (hors restriction CrohnIPI)
 └── README.md       # Documentation du projet
 ```
+
+## 📦 Téléchargement des modèles
+
+Les poids entraînés (`.pth`) ne sont pas inclus dans le dépôt Git (fichiers
+trop volumineux). Ils sont disponibles via ce lien Google Drive public :
+
+🔗 **[TODO : coller ici le lien Google Drive public]**
+
+Après téléchargement, placer les 4 fichiers directement dans `backend/models/` :
+
+| Fichier                          | Maladie | Modèle      |
+|-----------------------------------|---------|-------------|
+| `best_resnet50_limuc.pth`        | UC      | ResNet-50   |
+| `best_resnet50_crohnipi.pth`     | Crohn   | ResNet-50   |
+| `best_vit_s16_limuc.pth`         | UC      | ViT-S/16    |
+| `best_vit_s16_crohnipi.pth`      | Crohn   | ViT-S/16    |
 
 ## 📜 Licences
 
