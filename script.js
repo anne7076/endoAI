@@ -47,6 +47,68 @@ themeToggleBtn.addEventListener('click', () =>
     }
 });
 
+// ── DISEASE SELECTOR ──
+// Échelles de sévérité côté frontend (miroir de SEVERITY_SCALES dans model_utils.py)
+const severityScales = {
+    crohn: {
+        name: 'Classification endoscopique des lésions (CD)',
+        levels: [
+            { code: 'N', label: 'N — Non pathologique' },
+            { code: 'E', label: 'E — Érythème' },
+            { code: 'O', label: 'O — Œdème' },
+            { code: 'S', label: 'S — Sténose' },
+            { code: 'AU', label: 'AU — Ulcération aphtoïde (< 3 mm)' },
+            { code: 'U3-10', label: 'U3-10 — Ulcération 3–10 mm' },
+            { code: 'U>10', label: 'U>10 — Ulcération > 10 mm' },
+        ]
+    },
+    uc: {
+        name: 'Score de Mayo endoscopique',
+        levels: [
+            { code: '0', label: 'Mayo 0 — Muqueuse normale' },
+            { code: '1', label: 'Mayo 1 — Érythème léger' },
+            { code: '2', label: 'Mayo 2 — Friabilité, érosions' },
+            { code: '3', label: 'Mayo 3 — Ulcérations spontanées saignantes' },
+        ]
+    }
+};
+
+let selectedDisease = 'crohn';
+
+function selectDisease(el)
+{
+    document.querySelectorAll('.disease-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedDisease = el.dataset.disease;
+
+    // Hide any previous result when the disease changes
+    const ra = document.getElementById('dynamic-result-area');
+    ra.classList.remove('visible');
+    ra.style.display = 'none';
+
+    // Met à jour les pastilles de précision/rappel/F1 affichées sur les
+    // cartes "Modèles disponibles" pour refléter la maladie sélectionnée.
+    updateModelCardsPills();
+
+    // Si la fiche détail d'un modèle est ouverte, on la met à jour avec les
+    // courbes et métriques de la nouvelle maladie sélectionnée.
+    refreshModelDetailIfOpen();
+}
+
+function updateModelCardsPills()
+{
+    [ 'resnet', 'vit' ].forEach(key =>
+    {
+        const d = modelData[ selectedDisease ][ key ];
+        // Ligne 0 = Précision globale, ligne 1 = Macro-moyenne (précision/rappel/F1)
+        const macro = d.metrics[ 1 ];
+        document.getElementById(`pill-${key}-precision`).textContent = macro[ 1 ];
+        document.getElementById(`pill-${key}-recall`).textContent = macro[ 2 ];
+        document.getElementById(`pill-${key}-f1`).textContent = macro[ 3 ];
+        document.getElementById(`pill-${key}-params`).textContent = d.params;
+    });
+}
+
 // ── UPLOAD ──
 const fileInput = document.getElementById('file-input');
 const dropZone = document.getElementById('drop-zone');
@@ -143,6 +205,7 @@ async function runAnalysis()
         const formData = new FormData();
         formData.append('file', uploadedFile);
         formData.append('modelKey', selectedModel);
+        formData.append('disease', selectedDisease);
 
         const response = await fetch('http://localhost:8000/predict', {
             method: 'POST',
@@ -159,15 +222,16 @@ async function runAnalysis()
         const models_info = {
             resnet: 'ResNet-50',
             vit: 'ViT-B/16',
-            cnn: 'CNN Baseline',
         };
 
         const result = {
+            disease: data.disease,
             name: models_info[ data.model_used ] || data.model_used,
-            normal: data.scores.normal,
-            crohn: data.scores.crohn,
-            uc: data.scores.uc,
-            diag: data.diagnosis,
+            scaleName: data.scale_name,
+            scores: data.scores,
+            severityIdx: data.severity_idx,
+            severityCode: data.severity_code,
+            severityLabel: data.severity_label,
             gradcam_url: data.gradcam_url ? 'http://localhost:8000' + data.gradcam_url : null
         };
 
@@ -226,23 +290,39 @@ function showResults(r)
     const headerText = document.getElementById('result-header-text');
 
     // Réinitialiser l'état d'erreur
-    headerText.textContent = "Résultat du diagnostic";
+    headerText.textContent = "Résultat de l'analyse";
     headerText.style.color = "var(--muted)";
     resultContent.style.display = 'block';
     gradcamSection.style.display = 'block';
     errorContent.style.display = 'none';
 
-    const labels = { normal: 'Normal', crohn: 'Maladie de Crohn', uc: 'Colite ulcéreuse' };
-    const classes = { normal: 'diag-normal', crohn: 'diag-crohn', uc: 'diag-uc' };
-    const el = document.getElementById('diag-label');
-    el.textContent = labels[ r.diag ];
-    el.className = 'diagnosis-label ' + classes[ r.diag ];
+    const scale = severityScales[ r.disease ];
+
+    // Badge principal (niveau de sévérité prédit)
+    const lvlEl = document.getElementById('severity-label');
+    lvlEl.textContent = r.severityLabel;
+    lvlEl.className = 'severity-badge sev-level-' + Math.min(r.severityIdx, 3);
+
+    document.getElementById('result-scale-name').textContent = r.scaleName || scale.name;
     document.getElementById('model-tag').textContent = 'via ' + r.name;
 
+    // Construire les barres de confiance dynamiquement, une par niveau de l'échelle
+    const barsContainer = document.getElementById('severity-bars');
+    barsContainer.innerHTML = scale.levels.map((level, i) => `
+        <div class="conf-row">
+            <div class="conf-label"><span>${level.label}</span><span id="conf-${i}">—</span></div>
+            <div class="conf-track">
+                <div class="conf-fill fill-sev-${i}" id="bar-${i}" style="width:0%"></div>
+            </div>
+        </div>
+    `).join('');
+
     const toP = v => (v * 100).toFixed(1) + '%';
-    document.getElementById('conf-normal').textContent = toP(r.normal);
-    document.getElementById('conf-crohn').textContent = toP(r.crohn);
-    document.getElementById('conf-uc').textContent = toP(r.uc);
+    scale.levels.forEach((level, i) =>
+    {
+        const score = r.scores[ level.code ] ?? 0;
+        document.getElementById('conf-' + i).textContent = toP(score);
+    });
 
     // Show dynamic result area with animation
     const ra = document.getElementById('dynamic-result-area');
@@ -252,9 +332,11 @@ function showResults(r)
     // Animate bars after paint
     setTimeout(() =>
     {
-        document.getElementById('bar-normal').style.width = (r.normal * 100) + '%';
-        document.getElementById('bar-crohn').style.width = (r.crohn * 100) + '%';
-        document.getElementById('bar-uc').style.width = (r.uc * 100) + '%';
+        scale.levels.forEach((level, i) =>
+        {
+            const score = r.scores[ level.code ] ?? 0;
+            document.getElementById('bar-' + i).style.width = (score * 100) + '%';
+        });
     }, 60);
 
     drawGradCAM(r);
@@ -344,63 +426,102 @@ function drawOverlayFromURL(url)
 
 
 // ── MODEL DETAIL ──
+// Courbes d'entraînement réelles (extraites des logs d'entraînement) et
+// métriques de validation réelles (mesurées sous échantillonneur pondéré,
+// pour compenser le déséquilibre des classes). Structure : par maladie,
+// puis par modèle.
 const modelData = {
-    cnn: {
-        name: 'CNN Baseline',
-        tag: 'Architecture convolutive',
-        layers: [ 'Conv2D 32 → ReLU → MaxPool', 'Conv2D 64 → ReLU → MaxPool', 'Conv2D 128 → ReLU → MaxPool', 'Dense 256 → Dropout 0.4', 'Dense 3 → Softmax' ],
-        loss: {
-            train: [ 0.92, 0.74, 0.61, 0.52, 0.44, 0.39, 0.35, 0.32, 0.30, 0.29 ],
-            val: [ 0.98, 0.83, 0.70, 0.63, 0.57, 0.54, 0.52, 0.51, 0.50, 0.51 ]
+    uc: {
+        resnet: {
+            name: 'ResNet-50',
+            tag: 'Réseau résiduel profond — LIMUC (UC)',
+            layers: ['Conv2D 64 + BN + ReLU', '4× Blocs résiduels (64→128→256→512)', 'Connexions skip (shortcuts)', 'Global Average Pooling', 'Dense 4 → Softmax (Mayo 0-3)'],
+            loss: {
+                train: [1.0026, 0.7461, 0.6148, 0.5697, 0.5361, 0.5204, 0.5037, 0.4860, 0.4808, 0.4536, 0.4499, 0.4306, 0.4274, 0.4166, 0.3945, 0.3769, 0.3743, 0.3564, 0.3455, 0.3226],
+                val: [0.8516, 0.6767, 0.6105, 0.5701, 0.5636, 0.5452, 0.5324, 0.5295, 0.5301, 0.5263, 0.5275, 0.5346, 0.5331, 0.5348, 0.5437, 0.5324, 0.5627, 0.5473, 0.5403, 0.5739]
+            },
+            acc: {
+                train: null, // non logué à l'entraînement (seule Val Acc a été suivie)
+                val: [0.6126, 0.7226, 0.7284, 0.7461, 0.7445, 0.7701, 0.7685, 0.7732, 0.7722, 0.7800, 0.7774, 0.7722, 0.7779, 0.7774, 0.7685, 0.7628, 0.7701, 0.7789, 0.7696, 0.7659]
+            },
+            bestEpoch: 10,
+            bestValAcc: 0.7800,
+            earlyStopEpoch: 20,
+            totalEpochs: 50,
+            metrics: [
+                ['Précision globale', '76.0%', '—', '—', '—'],
+                ['Macro-moyenne', '70.0%', '71.0%', '70.0%', '—'],
+            ],
+            params: '≈ 25.6M'
         },
-        acc: {
-            train: [ 0.61, 0.72, 0.78, 0.82, 0.85, 0.87, 0.88, 0.89, 0.90, 0.90 ],
-            val: [ 0.58, 0.69, 0.74, 0.77, 0.80, 0.82, 0.83, 0.84, 0.84, 0.84 ]
-        },
-        metrics: [
-            [ 'Normal', '90.1%', '89.4%', '89.7%', 312 ],
-            [ 'Crohn', '86.4%', '88.1%', '87.2%', 287 ],
-            [ 'UC', '85.8%', '89.2%', '87.5%', 301 ],
-            [ 'Moyenne', '87.4%', '88.9%', '88.1%', 900 ],
-        ]
+        vit: {
+            name: 'ViT-S/16',
+            tag: 'Vision Transformer — LIMUC (UC)',
+            layers: ['Patch Embedding 16×16 → 196 tokens', 'Positional Encoding', '12× Transformer Blocks (MSA + FFN)', 'MLP Head (384→4)', 'Softmax — Mayo 0-3'],
+            loss: {
+                train: [0.6443, 0.4831, 0.4557, 0.4314, 0.4051, 0.3818, 0.3717, 0.3423, 0.3290, 0.3052, 0.2705, 0.2501, 0.2248, 0.2068, 0.1870, 0.1607, 0.1413, 0.1246, 0.1122, 0.1107, 0.0907, 0.0803, 0.0769, 0.0705, 0.0640, 0.0620, 0.0490, 0.0454, 0.0405, 0.0377],
+                val: [0.6441, 0.5639, 0.5104, 0.5488, 0.5385, 0.5104, 0.4983, 0.5050, 0.5123, 0.5132, 0.5247, 0.5381, 0.5348, 0.5495, 0.5688, 0.5936, 0.5682, 0.6467, 0.6758, 0.6196, 0.6979, 0.7054, 0.7294, 0.7528, 0.7183, 0.7832, 0.8370, 0.8203, 0.8825, 0.8792]
+            },
+            acc: {
+                train: null,
+                val: [0.7200, 0.7596, 0.7826, 0.7570, 0.7643, 0.7888, 0.7951, 0.7956, 0.7914, 0.7888, 0.7852, 0.7821, 0.7920, 0.7956, 0.7967, 0.7868, 0.7904, 0.7883, 0.7815, 0.7946, 0.7878, 0.7878, 0.7888, 0.7914, 0.7888, 0.7935, 0.7842, 0.7789, 0.7899, 0.7878]
+            },
+            bestEpoch: 15,
+            bestValAcc: 0.7967,
+            earlyStopEpoch: 30,
+            totalEpochs: 60,
+            metrics: [
+                ['Précision globale', '78.0%', '—', '—', '—'],
+                ['Macro-moyenne', '72.0%', '70.0%', '71.0%', '—'],
+            ],
+            params: '≈ 22.0M'
+        }
     },
-    resnet: {
-        name: 'ResNet-50',
-        tag: 'Réseau résiduel profond',
-        layers: [ 'Conv2D 64 + BN + ReLU', '4× Blocs résiduels (64→128→256→512)', 'Connexions skip (shortcuts)', 'Global Average Pooling', 'Dense 3 → Softmax (fine-tuning)' ],
-        loss: {
-            train: [ 0.68, 0.49, 0.37, 0.28, 0.22, 0.18, 0.15, 0.13, 0.12, 0.11 ],
-            val: [ 0.72, 0.55, 0.44, 0.37, 0.32, 0.29, 0.27, 0.26, 0.25, 0.26 ]
+    crohn: {
+        resnet: {
+            name: 'ResNet-50',
+            tag: 'Réseau résiduel profond — CrohnIPI',
+            layers: ['Conv2D 64 + BN + ReLU', '4× Blocs résiduels (64→128→256→512)', 'Connexions skip (shortcuts)', 'Global Average Pooling', 'Dense 7 → Softmax (N, E, O, S, AU, U3-10, U>10)'],
+            loss: {
+                train: [1.5066, 1.1372, 1.0632, 1.0166, 0.9680, 0.9406, 0.8797, 0.8173, 0.7802, 0.7236, 0.6670, 0.6276, 0.5933, 0.5436, 0.4968, 0.4754, 0.4517, 0.4007, 0.3837, 0.3548, 0.3531, 0.3409, 0.2893, 0.2647, 0.2632, 0.2804, 0.2558, 0.2080, 0.2041, 0.2018, 0.1866, 0.1644, 0.1801, 0.1513, 0.1582, 0.1600, 0.1359, 0.1268, 0.1226, 0.1230, 0.0988, 0.1147, 0.1194, 0.1023, 0.0951, 0.0859, 0.0995],
+                val: [1.3033, 1.0945, 1.0596, 1.0014, 0.9815, 0.9319, 0.8645, 0.8352, 0.7917, 0.7753, 0.7105, 0.6519, 0.6652, 0.5923, 0.5693, 0.5783, 0.5495, 0.5348, 0.5302, 0.5301, 0.5958, 0.5263, 0.5310, 0.5067, 0.5384, 0.5072, 0.5316, 0.4971, 0.5433, 0.5464, 0.5294, 0.5245, 0.5556, 0.5710, 0.5811, 0.5835, 0.5492, 0.5623, 0.5819, 0.6127, 0.5917, 0.6322, 0.6040, 0.5913, 0.6065, 0.6037, 0.6004]
+            },
+            acc: {
+                train: null,
+                val: [0.6099, 0.6099, 0.6099, 0.6195, 0.6291, 0.6482, 0.6941, 0.7170, 0.7514, 0.7801, 0.7954, 0.8126, 0.8088, 0.8317, 0.8164, 0.8203, 0.8413, 0.8317, 0.8432, 0.8337, 0.8394, 0.8528, 0.8451, 0.8509, 0.8413, 0.8585, 0.8470, 0.8451, 0.8413, 0.8394, 0.8566, 0.8604, 0.8470, 0.8394, 0.8585, 0.8394, 0.8489, 0.8451, 0.8604, 0.8432, 0.8509, 0.8585, 0.8585, 0.8489, 0.8566, 0.8547, 0.8394]
+            },
+            bestEpoch: 32,
+            bestValAcc: 0.8604,
+            earlyStopEpoch: 47,
+            totalEpochs: 50,
+            metrics: [
+                ['Précision globale', '82.0%', '—', '—', '—'],
+                ['Macro-moyenne', '73.0%', '63.0%', '66.0%', '—'],
+            ],
+            params: '≈ 25.6M'
         },
-        acc: {
-            train: [ 0.72, 0.82, 0.88, 0.91, 0.93, 0.95, 0.96, 0.97, 0.97, 0.97 ],
-            val: [ 0.69, 0.79, 0.85, 0.88, 0.91, 0.93, 0.94, 0.95, 0.95, 0.95 ]
-        },
-        metrics: [
-            [ 'Normal', '96.3%', '95.7%', '96.0%', 312 ],
-            [ 'Crohn', '94.8%', '96.9%', '95.8%', 287 ],
-            [ 'UC', '94.6%', '96.6%', '95.6%', 301 ],
-            [ 'Moyenne', '95.2%', '96.4%', '95.8%', 900 ],
-        ]
-    },
-    vit: {
-        name: 'ViT-B/16',
-        tag: 'Vision Transformer',
-        layers: [ 'Patch Embedding 16×16 → 196 tokens', 'Positional Encoding', '12× Transformer Blocks (MSA + FFN)', 'MLP Head (768→3)', 'Softmax — 3 classes' ],
-        loss: {
-            train: [ 0.71, 0.51, 0.38, 0.29, 0.22, 0.17, 0.14, 0.12, 0.11, 0.10 ],
-            val: [ 0.74, 0.56, 0.44, 0.35, 0.29, 0.25, 0.23, 0.22, 0.22, 0.22 ]
-        },
-        acc: {
-            train: [ 0.70, 0.80, 0.87, 0.91, 0.93, 0.95, 0.96, 0.97, 0.98, 0.98 ],
-            val: [ 0.67, 0.78, 0.85, 0.89, 0.92, 0.94, 0.95, 0.96, 0.96, 0.96 ]
-        },
-        metrics: [
-            [ 'Normal', '97.1%', '96.5%', '96.8%', 312 ],
-            [ 'Crohn', '95.7%', '97.0%', '96.3%', 287 ],
-            [ 'UC', '95.5%', '96.6%', '96.0%', 301 ],
-            [ 'Moyenne', '96.1%', '96.7%', '96.4%', 900 ],
-        ]
+        vit: {
+            name: 'ViT-S/16',
+            tag: 'Vision Transformer — CrohnIPI',
+            layers: ['Patch Embedding 16×16 → 196 tokens', 'Positional Encoding', '12× Transformer Blocks (MSA + FFN)', 'MLP Head (384→7)', 'Softmax — N, E, O, S, AU, U3-10, U>10'],
+            loss: {
+                train: [1.1315, 0.7523, 0.5711, 0.4748, 0.4162, 0.3370, 0.2991, 0.2589, 0.2281, 0.2069, 0.1958, 0.1538, 0.1418, 0.1376, 0.1211, 0.0973, 0.1038, 0.0808, 0.0791, 0.0642, 0.0694, 0.0549, 0.0457, 0.0440, 0.0490, 0.0517, 0.0377, 0.0326, 0.0400, 0.0358, 0.0300, 0.0217, 0.0217, 0.0316, 0.0545, 0.0199, 0.0201, 0.0245, 0.0178, 0.0223, 0.0209],
+                val: [0.9324, 0.7234, 0.6526, 0.5616, 0.4685, 0.5024, 0.4169, 0.4201, 0.4080, 0.4277, 0.4227, 0.4009, 0.4414, 0.4116, 0.4116, 0.4187, 0.4054, 0.4662, 0.4614, 0.4506, 0.4279, 0.4594, 0.4574, 0.4685, 0.4744, 0.4655, 0.4704, 0.4862, 0.4672, 0.5022, 0.5006, 0.5327, 0.5327, 0.5371, 0.4907, 0.4777, 0.5597, 0.4923, 0.5852, 0.5681, 0.5676]
+            },
+            acc: {
+                train: null,
+                val: [0.7075, 0.7610, 0.7801, 0.8011, 0.8337, 0.8222, 0.8489, 0.8528, 0.8585, 0.8528, 0.8509, 0.8642, 0.8413, 0.8585, 0.8566, 0.8604, 0.8623, 0.8470, 0.8489, 0.8470, 0.8700, 0.8547, 0.8604, 0.8662, 0.8604, 0.8834, 0.8604, 0.8700, 0.8700, 0.8604, 0.8681, 0.8642, 0.8757, 0.8623, 0.8681, 0.8662, 0.8700, 0.8681, 0.8585, 0.8623, 0.8662]
+            },
+            bestEpoch: 26,
+            bestValAcc: 0.8834,
+            earlyStopEpoch: 41,
+            totalEpochs: 50,
+            metrics: [
+                ['Précision globale', '87.0%', '—', '—', '—'],
+                ['Macro-moyenne', '77.0%', '75.0%', '75.0%', '—'],
+            ],
+            params: '≈ 22.0M'
+        }
     }
 };
 
@@ -414,20 +535,17 @@ const chartDefaults = {
     }
 };
 
+let currentModelKey = null;
+
 function showModelDetail(key)
 {
     document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
     document.getElementById('card-' + key).classList.add('active');
+    currentModelKey = key;
 
-    const d = modelData[ key ];
+    const d = modelData[ selectedDisease ][ key ];
     document.getElementById('detail-tag').textContent = d.tag;
     document.getElementById('detail-title').textContent = d.name;
-
-    const archEl = document.getElementById('arch-layers');
-    archEl.innerHTML = d.layers.map((l, i) => `
-    <div class="arch-layer"><div class="arch-layer-num">${i + 1}</div><span style="font-size:12px;">${l}</span></div>
-    ${i < d.layers.length - 1 ? '<div class="arch-arrow" style="font-size:13px;color:var(--muted)">↓</div>' : ''}
-  `).join('');
 
     const mb = document.getElementById('metrics-body');
     mb.innerHTML = d.metrics.map((r, i) => `
@@ -440,7 +558,7 @@ function showModelDetail(key)
     </tr>
   `).join('');
 
-    const epochs = Array.from({ length: 10 }, (_, i) => 'Ép. ' + (i + 1));
+    const epochs = Array.from({ length: d.loss.train.length }, (_, i) => 'Ép. ' + (i + 1));
     if (lossChart) lossChart.destroy();
     if (accChart) accChart.destroy();
 
@@ -456,21 +574,35 @@ function showModelDetail(key)
         options: { ...chartDefaults }
     });
 
+    // Val Acc est toujours disponible ; Train Acc n'a pas été loguée pendant
+    // ces entraînements (seule la perte d'entraînement a été suivie), donc
+    // le dataset "Train" n'est affiché que s'il existe.
+    const accDatasets = [
+        { label: 'Validation', data: d.acc.val, borderColor: '#f9c848', tension: 0.4, pointRadius: 2, borderWidth: 2, fill: false }
+    ];
+    if (d.acc.train)
+    {
+        accDatasets.unshift({ label: 'Train', data: d.acc.train, borderColor: '#2dd4a0', tension: 0.4, pointRadius: 2, borderWidth: 2, fill: false });
+    }
+
     accChart = new Chart(document.getElementById('acc-chart'), {
         type: 'line',
-        data: {
-            labels: epochs,
-            datasets: [
-                { label: 'Train', data: d.acc.train, borderColor: '#2dd4a0', tension: 0.4, pointRadius: 2, borderWidth: 2, fill: false },
-                { label: 'Validation', data: d.acc.val, borderColor: '#f9c848', tension: 0.4, pointRadius: 2, borderWidth: 2, borderDash: [ 4, 3 ], fill: false }
-            ]
-        },
+        data: { labels: epochs, datasets: accDatasets },
         options: { ...chartDefaults }
     });
 
     const detail = document.getElementById('model-detail');
     detail.classList.add('open');
     setTimeout(() => detail.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function refreshModelDetailIfOpen()
+{
+    const detail = document.getElementById('model-detail');
+    if (detail.classList.contains('open') && currentModelKey)
+    {
+        showModelDetail(currentModelKey);
+    }
 }
 
 function closeModelDetail()
@@ -539,3 +671,8 @@ async function submitForm()
         btn.style.opacity = "1";
     }
 }
+
+// ── INITIALISATION ──
+// Remplit les pastilles de métriques des cartes "Modèles disponibles" avec
+// les valeurs de la maladie sélectionnée par défaut au chargement de la page.
+updateModelCardsPills();
