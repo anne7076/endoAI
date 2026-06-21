@@ -22,20 +22,30 @@
 
 Le projet est conçu de manière modulaire et statique côté client (Front-end). Aucune dépendance complexe n'est requise.
 
-1. **Cloner le répertoire**
+# 1. Cloner le dépôt
+git clone https://github.com/anne7076/endoAI.git
+cd endoAI
+cd backend
+ 
+# 2. Créer un environnement virtuel (recommandé)
 
-   ```bash
-   git clone https://github.com/votre-nom/endoai.git
-   cd endoai
-   python -m pip install -r backend/requirements.txt
-   ```
+python -m venv venv
+source venv/bin/activate    	# Linux / macOS
+venv\Scripts\activate       	# Windows
+ 
+# 3. Installer les dépendances
+pip install -r requirements.txt
+ 
+# 4. Placer les modèles entraînés dans le répertoire models/
+# (Télécharger depuis le lien fourni dans le README du dépôt)
+#  mkdir models si le sous dossier models n’existe pas 
+# cp /chemin/vers/resnet50.h5 models/
+ 
+# 5. Lancer le serveur backend
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+ 
+# 6. Ouvrir le frontend dans le navigateur : Ouvrir index.html 
 
-2. **Lancer l'application**
-   Il suffit d'ouvrir le fichier `index.html` dans n'importe quel navigateur web moderne (Chrome, Firefox, Edge, Safari).
-   
-   ```bash
-   python app.py
-   ```
 
 ## 📂 Structure du Projet
 
