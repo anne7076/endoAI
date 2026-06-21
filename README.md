@@ -40,12 +40,17 @@ Le projet est conçu de manière modulaire et statique côté client (Front-end)
 ## 📂 Structure du Projet
 
 ```text
-📁 /
-├── 📁 backend    
-├── 📄 index.html      # Structure principale de la page web (HTML)
-├── 📄 style.css       # Styles, design et thèmes (Clair/Sombre) (S'il a été séparé)
-├── 📄 script.js       # Logique applicative, gestion des modèles et graphiques
-└── 📄 README.md       # Documentation du projet
+endoai/
+├── backend/ 
+│   ├── models/        # Répertoire des modèles entraînés (.pth)   
+│   ├── app.py              	# Point d'entrée FastAPI
+│   ├── model_utils.py      	# Chargement des modèles, prédiction, Grad-CAM
+│   └── requirements.txt    	# Dépendances Python 
+├── index.html      # Structure principale de la page web (HTML)
+├── style.css       # Styles, design et thèmes (Clair/Sombre) (S'il a été séparé)
+├── script.js       # Logique applicative, gestion des modèles et graphiques
+└── README.md       # Documentation du projet
+
 ```
 
 ## ⚠️ Avertissement Légal & Médical
