@@ -38,7 +38,7 @@ pip install -r requirements.txt
  
 # 4. Placer les modèles entraînés dans le répertoire models/
 # (Télécharger depuis le lien fourni dans le README du dépôt)
-#  mkdir models si le sous dossier models n’existe pas 
+mkdir models 
 # cp /chemin/vers/resnet50.h5 models/
  
 # 5. Lancer le serveur backend
