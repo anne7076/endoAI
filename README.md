@@ -5,7 +5,7 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)
 
-**EndoAI** est une application web interactive conçue pour assister les professionnels de santé dans le diagnostic des Maladies Inflammatoires Chroniques de l'Intestin (MICI) à partir d'images d'endoscopie. L'outil repose sur des modèles d'Intelligence Artificielle avancés pour distinguer les niveaux de severités  de la maladie de **CrohnIPI**,  ceux de **LIMUC**.
+**EndoAI** est une application web interactive conçue pour assister les professionnels de santé dans le diagnostic des Maladies Inflammatoires Chroniques de l'Intestin (MICI) à partir d'images d'endoscopie. L'outil repose sur des modèles d'Intelligence Artificielle avancés pour distinguer les niveaux de severités  de la maladie de **CrohnIPI** et ceux de **LIMUC**.
 
 ## ✨ Fonctionnalités Principales
 
