@@ -19,7 +19,7 @@
         <a href="#diagnostic" class="hidden-mobile">Diagnostic</a>
         <a href="#modeles" class="hidden-mobile">Modèles</a>
         <a href="#contact" class="hidden-mobile">Contact</a>
-        <a href="https://github.com" target="_blank" class="nav-cta hidden-mobile">GitHub ↗</a>
+        <a href="https://github.com/anne7076/endoAI" target="_blank" class="nav-cta hidden-mobile">GitHub ↗</a>
         <button class="theme-toggle" id="theme-toggle" title="Basculer le thème">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -43,10 +43,10 @@
             Outil d'aide au diagnostic — MICI
         </div>
         <h1 class="hero-title">
-            Diagnostic des <em>maladies inflammatoires</em> par imagerie endoscopique
+            Diagnostic des <em>Maladies Inflammatoires Chroniques de l'Intestin (MICI)</em> par imagerie endoscopique
         </h1>
         <p class="hero-desc">
-            Sélectionnez une pathologie — maladie de Crohn ou colite ulcéreuse — et analysez une image d'endoscopie à
+            Sélectionnez une maladie soit <b>Crohn</b> ou <b>Colite Ulcéreuse (UC)</b> — et analysez une image d'endoscopie à
             l'aide de modèles d'IA de pointe pour évaluer son niveau de sévérité endoscopique. Résultats en quelques
             secondes, avec explication visuelle.
         </p>
@@ -61,7 +61,7 @@
         <div class="hero-stats">
             <div class="stat-item"><span class="stat-value">2</span><span class="stat-label">Pathologies (Crohn /
                     UC)</span></div>
-            <div class="stat-item"><span class="stat-value">96.4%</span><span class="stat-label">Précision max.</span>
+            <div class="stat-item"><span class="stat-value">96.1%</span><span class="stat-label">Précision max.</span>
             </div>
             <div class="stat-item"><span class="stat-value">4–7</span><span class="stat-label">Niveaux de
                     sévérité</span></div>
@@ -141,29 +141,29 @@
                             <div class="model-trigger-name" id="trigger-name">ResNet-50</div>
                             <div class="model-trigger-sub" id="trigger-sub">Résiduel · 50 couches · rapide</div>
                         </div>
-                        <span class="model-trigger-badge" id="trigger-badge">F1 95.8%</span>
+                        <span class="model-trigger-badge" id="trigger-badge">F1 66% — 70%</span>
                         <span class="model-trigger-arrow">▼</span>
                     </div>
                     <div class="model-dropdown" id="model-dropdown">
                         <div class="model-option selected" data-value="resnet" data-icon="⚡" data-name="ResNet-50"
-                            data-sub="Résiduel · 50 couches · rapide" data-badge="F1 95.8%" onclick="selectModel(this)">
+                            data-sub="Résiduel · 50 couches · rapide" data-badge="F1 66% — 70%" onclick="selectModel(this)">
                             <div class="model-option-check"></div>
                             <span class="model-option-icon">⚡</span>
                             <div class="model-option-info">
                                 <div class="model-option-name">ResNet-50</div>
                                 <div class="model-option-desc">Résiduel · 50 couches · rapide</div>
                             </div>
-                            <span class="model-option-badge">F1 95.8%</span>
+                            <span class="model-option-badge">F1 66% — 70%</span>
                         </div>
-                        <div class="model-option" data-value="vit" data-icon="🔷" data-name="ViT-B/16"
-                            data-sub="Attention · patches 16×16" data-badge="F1 96.4%" onclick="selectModel(this)">
+                        <div class="model-option" data-value="vit" data-icon="🔷" data-name="ViT-S/16"
+                            data-sub="Attention · patches 16×16" data-badge="F1 75% — 71%" onclick="selectModel(this)">
                             <div class="model-option-check"></div>
                             <span class="model-option-icon">🔷</span>
                             <div class="model-option-info">
-                                <div class="model-option-name">Vision Transformer (ViT-B/16)</div>
+                                <div class="model-option-name">Vision Transformer (ViT-S/16)</div>
                                 <div class="model-option-desc">Attention · patches 16×16</div>
                             </div>
-                            <span class="model-option-badge">F1 96.4%</span>
+                            <span class="model-option-badge">F1 75% — 71%</span>
                         </div>
                     </div>
                 </div>
@@ -307,7 +307,7 @@
                 </div>
                 <div>
                     <div class="detail-chart-box">
-                        <h4>Métriques par classe</h4>
+                        <h4>Performances</h4>
                         <div class="metrics-full">
                             <table id="metrics-table">
                                 <thead>
