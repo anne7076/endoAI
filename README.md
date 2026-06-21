@@ -22,6 +22,7 @@
 
 Le projet est conçu de manière modulaire et statique côté client (Front-end). Aucune dépendance complexe n'est requise.
 
+```text
 # 1. Cloner le dépôt
 git clone https://github.com/anne7076/endoAI.git
 cd endoAI
@@ -46,6 +47,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
  
 # 6. Ouvrir le frontend dans le navigateur : Ouvrir index.html 
 
+```
 
 ## 📂 Structure du Projet
 
