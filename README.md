@@ -12,9 +12,8 @@
 - **Analyse Multi-Modèles** : Choisissez entre trois architectures selon vos besoins :
   - **ResNet-50** : Précision élevée (F1-Score 95.8%) et temps d'inférence rapide.
   - **Vision Transformer (ViT-B/16)** : Architecture basée sur l'attention offrant les meilleures performances globales (F1-Score 96.4%).
-  - **CNN Baseline** : Réseau léger, optimisé pour les environnements à ressources limitées.
 - **Explicabilité (XAI - Grad-CAM)** : L'IA ne donne pas qu'un résultat. Elle surligne les zones de l'image (cartes de chaleur) qui ont conduit à sa prédiction, offrant ainsi aux médecins une transparence totale.
-- **Tableau de Bord des Modèles** : Visualisation dynamique (via _Chart.js_) des courbes d'apprentissage (Loss/Accuracy), architecture en couches et métriques détaillées de chaque modèle.
+- **Tableau de Bord des Modèles** : Visualisation dynamique (via _Chart.js_) des courbes d'apprentissage (Loss/Accuracy) et métriques détaillées de chaque modèle.
 - **Thème Dynamique** : Basculez entre un mode Clair (diurne) et un mode Sombre (nocturne) pour un confort visuel optimal en milieu clinique.
 - **Design Réactif** : Interface entièrement _responsive_ s'adaptant aussi bien aux écrans de bureau qu'aux tablettes et mobiles.
 
