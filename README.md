@@ -69,7 +69,7 @@ endoai/
 Les poids entraînés (`.pth`) ne sont pas inclus dans le dépôt Git (fichiers
 trop volumineux). Ils sont disponibles via ce lien Google Drive public :
 
-🔗 **[TODO : coller ici le lien Google Drive public]**
+🔗 **[Télécharger Tous les Modèles](https://drive.google.com/drive/folders/1qHyNoOYYKhn-eZ9oUIfY3pzyOuKmGPgF?usp=drive_link)**
 
 Après téléchargement, placer les 4 fichiers directement dans `backend/models/` :
 
