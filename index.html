@@ -207,6 +207,13 @@
                     <div class="confidence-bars" id="severity-bars">
                         <!-- Rempli dynamiquement par script.js selon la maladie sélectionnée -->
                     </div>
+                    <button class="upload-btn" id="download-pdf-btn" onclick="downloadResultPDF()"
+                        style="margin-top:18px;display:inline-flex;align-items:center;gap:8px;width:auto;">
+                        <span id="pdf-btn-txt">⬇ Télécharger le rapport (PDF)</span>
+                        <div class="spin" id="pdf-btn-spin"
+                            style="display:none;width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff">
+                        </div>
+                    </button>
                 </div>
 
                 <!-- Error content (hidden by default) -->
@@ -227,7 +234,13 @@
                     prédiction</p>
                 <div class="gradcam-imgs">
                     <div>
-                        <div class="gradcam-thumb"><canvas class="gradcam-canvas" id="cam-original"></canvas></div>
+                        <div class="gradcam-thumb gradcam-zoomable" id="thumb-original"
+                            onclick="openImageModal('cam-original','Image originale')">
+                            <canvas class="gradcam-canvas" id="cam-original"></canvas>
+                            <span class="gradcam-zoom-hint">🔍</span>
+                            <button class="gradcam-dl-btn" title="Télécharger cette image"
+                                onclick="event.stopPropagation(); downloadCanvasImage('cam-original','image_originale.jpg')">⬇</button>
+                        </div>
                         <p class="gradcam-label">Image originale</p>
                     </div>
                     <div>
@@ -235,7 +248,13 @@
                         <p class="gradcam-label">Carte de chaleur</p>
                     </div>
                     <div>
-                        <div class="gradcam-thumb"><canvas class="gradcam-canvas" id="cam-overlay"></canvas></div>
+                        <div class="gradcam-thumb gradcam-zoomable" id="thumb-overlay"
+                            onclick="openImageModal('cam-overlay','Superposition Grad-CAM')">
+                            <canvas class="gradcam-canvas" id="cam-overlay"></canvas>
+                            <span class="gradcam-zoom-hint">🔍</span>
+                            <button class="gradcam-dl-btn" title="Télécharger cette image"
+                                onclick="event.stopPropagation(); downloadCanvasImage('cam-overlay','gradcam_superposition.jpg')">⬇</button>
+                        </div>
                         <p class="gradcam-label">Superposition</p>
                     </div>
                 </div>
@@ -354,10 +373,10 @@
                             <span class="contact-link-sub">Réponse sous 48h ouvrées</span>
                         </div>
                     </a>
-                    <a href="rapport_technique.pdf" download="rapport_technique.pdf" class="contact-link">
+                    <a href="Rapport.pdf" download="Rapport.pdf" class="contact-link">
                         <div class="contact-link-icon" style="background:rgba(45,212,160,0.1);font-size:18px;">📄</div>
                         <div class="contact-link-text">
-                            <span class="contact-link-label">Rapport technique (PDF)</span>
+                            <span class="contact-link-label">Rapport (PDF)</span>
                             <span class="contact-link-sub">Méthodologie complète</span>
                         </div>
                         <span style="color:var(--muted);font-size:14px;">↓</span>
@@ -413,13 +432,27 @@
             <a href="#modeles">Modèles</a>
             <a href="#contact">Contact</a>
             <a href="https://github.com" target="_blank">GitHub ↗</a>
-            <a href="rapport_technique.pdf" download="rapport_technique.pdf">Rapport PDF ↓</a>
+            <a href="Rapport.pdf" download="Rapport.pdf">Rapport PDF ↓</a>
         </div>
         <p>EndoAI — Projet de classification des MICI par deep learning · Outil d'aide au diagnostic uniquement</p>
     </footer>
 
+    <!-- IMAGE ZOOM MODAL -->
+    <div id="image-zoom-modal" class="image-zoom-modal" onclick="closeImageModal(event)">
+        <div class="image-zoom-content" onclick="event.stopPropagation()">
+            <div class="image-zoom-header">
+                <span id="image-zoom-title">Image</span>
+                <button class="image-zoom-close" onclick="closeImageModal()" title="Fermer">✕</button>
+            </div>
+            <img id="image-zoom-img" alt="Aperçu agrandi" />
+            <button class="image-zoom-download" id="image-zoom-download-btn" onclick="downloadZoomedImage()">⬇
+                Télécharger cette image</button>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="text/javascript">
         (function () {
             // Remplacez "VOTRE_CLE_PUBLIQUE_EMAILJS" par votre vraie clé publique MailJS !
