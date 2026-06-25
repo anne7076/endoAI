@@ -113,6 +113,7 @@ function updateModelCardsPills()
 const fileInput = document.getElementById('file-input');
 const dropZone = document.getElementById('drop-zone');
 let uploadedFile = null;
+let lastResult = null; // Dernier résultat d'analyse (utilisé pour l'export PDF et le zoom image)
 
 fileInput.addEventListener('change', e => handleFile(e.target.files[ 0 ]));
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
@@ -185,6 +186,20 @@ document.addEventListener('click', e =>
     }
 });
 
+// Fermer le modal de zoom image avec la touche Échap
+document.addEventListener('keydown', e =>
+{
+    if (e.key === 'Escape')
+    {
+        const modal = document.getElementById('image-zoom-modal');
+        if (modal && modal.classList.contains('open'))
+        {
+            modal.classList.remove('open');
+            currentZoomTarget = null;
+        }
+    }
+});
+
 // ── ANALYSIS ──
 async function runAnalysis()
 {
@@ -221,7 +236,7 @@ async function runAnalysis()
         const data = await response.json();
         const models_info = {
             resnet: 'ResNet-50',
-            vit: 'ViT-B/16',
+            vit: 'ViT-S/16',
         };
 
         const result = {
@@ -297,6 +312,10 @@ function showResults(r)
     errorContent.style.display = 'none';
 
     const scale = severityScales[ r.disease ];
+
+    // Conserver le dernier résultat (utilisé pour l export PDF et le zoom image)
+    lastResult = r;
+    lastResult.scaleLevels = scale.levels;
 
     // Badge principal (niveau de sévérité prédit)
     const lvlEl = document.getElementById('severity-label');
@@ -422,6 +441,312 @@ function drawOverlayFromURL(url)
         hctx.drawImage(img, 0, 0, 200, 150);
     };
     img.src = url + "?t=" + new Date().getTime(); // Prevent caching old heatmaps
+}
+
+// ── ZOOM SUR LES IMAGES (originale & Grad-CAM) ──
+// On affiche la source haute résolution (pas le petit canvas 200x150) pour
+// un zoom net : l'image originale uploadée, ou l'URL Grad-CAM du backend.
+let currentZoomTarget = null; // 'cam-original' | 'cam-overlay'
+
+function getHighResSrcFor(canvasId)
+{
+    if (canvasId === 'cam-original')
+    {
+        const img = document.getElementById('preview-img');
+        return img && img.src ? img.src : null;
+    }
+    if (canvasId === 'cam-overlay')
+    {
+        if (lastResult && lastResult.gradcam_url)
+        {
+            return lastResult.gradcam_url + "?t=" + new Date().getTime();
+        }
+        // Pas de Grad-CAM généré : on retombe sur l'image d'origine affichée dans le canvas
+        const img = document.getElementById('preview-img');
+        return img && img.src ? img.src : null;
+    }
+    return null;
+}
+
+function openImageModal(canvasId, title)
+{
+    const src = getHighResSrcFor(canvasId);
+    if (!src) return;
+
+    currentZoomTarget = canvasId;
+    document.getElementById('image-zoom-title').textContent = title || 'Image';
+    const imgEl = document.getElementById('image-zoom-img');
+    imgEl.src = src;
+
+    const modal = document.getElementById('image-zoom-modal');
+    modal.classList.add('open');
+}
+
+function closeImageModal(event)
+{
+    // Si appelé via le clic sur l'arrière-plan, ne fermer que si le clic est bien hors du contenu
+    if (event && event.target && event.target.id !== 'image-zoom-modal') return;
+    document.getElementById('image-zoom-modal').classList.remove('open');
+    currentZoomTarget = null;
+}
+
+function downloadZoomedImage()
+{
+    if (!currentZoomTarget) return;
+    const filename = currentZoomTarget === 'cam-original' ? 'image_originale.jpg' : 'gradcam_superposition.jpg';
+    downloadImageFromSrc(document.getElementById('image-zoom-img').src, filename);
+}
+
+// ── TÉLÉCHARGEMENT D'IMAGES INDIVIDUELLES ──
+function downloadCanvasImage(canvasId, filename)
+{
+    const src = getHighResSrcFor(canvasId);
+    if (!src)
+    {
+        // Repli : télécharger directement le contenu du canvas affiché
+        const canvas = document.getElementById(canvasId);
+        try
+        {
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            triggerDownload(dataUrl, filename);
+        } catch (e)
+        {
+            console.error('Téléchargement impossible :', e);
+        }
+        return;
+    }
+    downloadImageFromSrc(src, filename);
+}
+
+function downloadImageFromSrc(src, filename)
+{
+    // Les data: URLs (preview local) se téléchargent directement.
+    if (src.startsWith('data:'))
+    {
+        triggerDownload(src, filename);
+        return;
+    }
+
+    // Les URLs distantes (Grad-CAM servi par le backend) sont récupérées en
+    // blob pour forcer un vrai téléchargement plutôt qu'une navigation.
+    fetch(src)
+        .then(res => res.blob())
+        .then(blob =>
+        {
+            const blobUrl = URL.createObjectURL(blob);
+            triggerDownload(blobUrl, filename);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+        })
+        .catch(err =>
+        {
+            console.error('Téléchargement impossible, ouverture dans un nouvel onglet :', err);
+            window.open(src, '_blank');
+        });
+}
+
+function triggerDownload(href, filename)
+{
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename || 'image.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// ── EXPORT PDF DU RAPPORT (résultat + scores + image + Grad-CAM) ──
+function loadImageAsDataURL(src)
+{
+    return new Promise((resolve) =>
+    {
+        if (!src) { resolve(null); return; }
+
+        // data: URL déjà exploitable directement
+        if (src.startsWith('data:')) { resolve(src); return; }
+
+        fetch(src)
+            .then(res => res.blob())
+            .then(blob =>
+            {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(blob);
+            })
+            .catch(() => resolve(null));
+    });
+}
+
+async function downloadResultPDF()
+{
+    if (!lastResult)
+    {
+        alert("Aucun résultat à exporter. Veuillez d'abord lancer une analyse.");
+        return;
+    }
+
+    const btnTxt = document.getElementById('pdf-btn-txt');
+    const btnSpin = document.getElementById('pdf-btn-spin');
+    const btn = document.getElementById('download-pdf-btn');
+    btn.disabled = true;
+    btnTxt.style.display = 'none';
+    btnSpin.style.display = 'block';
+
+    try
+    {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const marginX = 15;
+        let y = 18;
+
+        // ── En-tête ──
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(30, 30, 30);
+        doc.text('EndoAI — Rapport de diagnostic', marginX, y);
+        y += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(120, 120, 120);
+        const dateStr = new Date().toLocaleString('fr-FR');
+        doc.text('Généré le ' + dateStr, marginX, y);
+        y += 9;
+
+        doc.setDrawColor(220, 220, 220);
+        doc.line(marginX, y, pageWidth - marginX, y);
+        y += 10;
+
+        // ── Informations générales ──
+        const r = lastResult;
+        const diseaseLabel = r.disease === 'crohn' ? 'Maladie de Crohn' : 'Colite ulcérée (UC)';
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(30, 30, 30);
+        doc.text('Résultat de l\u2019analyse', marginX, y);
+        y += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+        const infoLines = [
+            ['Maladie évaluée', diseaseLabel],
+            ['Échelle utilisée', r.scaleName || ''],
+            ['Modèle utilisé', r.name || ''],
+            ['Niveau de sévérité prédit', r.severityLabel || ''],
+        ];
+        infoLines.forEach(([ label, value ]) =>
+        {
+            doc.setTextColor(120, 120, 120);
+            doc.text(label + ' :', marginX, y);
+            doc.setTextColor(30, 30, 30);
+            doc.text(String(value), marginX + 55, y);
+            y += 6.5;
+        });
+        y += 4;
+
+        // ── Scores de confiance ──
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(30, 30, 30);
+        doc.text('Scores de confiance par niveau', marginX, y);
+        y += 7;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10.5);
+        const levels = r.scaleLevels || [];
+        levels.forEach((level) =>
+        {
+            const score = r.scores[ level.code ] ?? 0;
+            const pct = (score * 100).toFixed(1) + ' %';
+
+            doc.setTextColor(60, 60, 60);
+            doc.text(level.label, marginX, y);
+            doc.setTextColor(30, 30, 30);
+            doc.text(pct, pageWidth - marginX - 14, y);
+
+            // Petite barre de score
+            const barX = marginX;
+            const barY = y + 1.6;
+            const barMaxW = pageWidth - 2 * marginX;
+            const barH = 2.2;
+            doc.setFillColor(230, 230, 230);
+            doc.rect(barX, barY, barMaxW, barH, 'F');
+            doc.setFillColor(59, 145, 247);
+            doc.rect(barX, barY, barMaxW * Math.min(score, 1), barH, 'F');
+
+            y += 9;
+        });
+        y += 4;
+
+        if (y > 230) { doc.addPage(); y = 18; }
+
+        // ── Images : originale + Grad-CAM ──
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(30, 30, 30);
+        doc.text('Image analysée & explicabilité (Grad-CAM)', marginX, y);
+        y += 8;
+
+        const originalSrc = document.getElementById('preview-img').src;
+        const gradcamSrc = r.gradcam_url ? (r.gradcam_url + '?t=' + new Date().getTime()) : originalSrc;
+
+        const [ originalData, gradcamData ] = await Promise.all([
+            loadImageAsDataURL(originalSrc),
+            loadImageAsDataURL(gradcamSrc)
+        ]);
+
+        const imgW = (pageWidth - 2 * marginX - 8) / 2;
+        const imgH = imgW * 0.75;
+
+        const formatFromDataURL = (dataUrl) =>
+        {
+            if (!dataUrl) return 'JPEG';
+            if (dataUrl.startsWith('data:image/png')) return 'PNG';
+            if (dataUrl.startsWith('data:image/webp')) return 'WEBP';
+            return 'JPEG';
+        };
+
+        if (originalData)
+        {
+            try { doc.addImage(originalData, formatFromDataURL(originalData), marginX, y, imgW, imgH); } catch (e) { console.error(e); }
+        }
+        if (gradcamData)
+        {
+            try { doc.addImage(gradcamData, formatFromDataURL(gradcamData), marginX + imgW + 8, y, imgW, imgH); } catch (e) { console.error(e); }
+        }
+        y += imgH + 5;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(120, 120, 120);
+        doc.text('Image originale', marginX, y);
+        doc.text('Superposition Grad-CAM', marginX + imgW + 8, y);
+        y += 10;
+
+        // ── Avertissement médical ──
+        if (y > 250) { doc.addPage(); y = 18; }
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(150, 110, 20);
+        const warning = "Avertissement : cet outil est destine a l'aide au diagnostic uniquement. Il ne remplace pas l'expertise d'un professionnel de sante qualifie.";
+        const wrapped = doc.splitTextToSize(warning, pageWidth - 2 * marginX);
+        doc.text(wrapped, marginX, y);
+
+        const filenameSafe = 'EndoAI_rapport_' + (r.disease || 'resultat') + '_' + Date.now() + '.pdf';
+        doc.save(filenameSafe);
+
+    } catch (err)
+    {
+        console.error('Erreur lors de la génération du PDF :', err);
+        alert("Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.");
+    } finally
+    {
+        btn.disabled = false;
+        btnTxt.style.display = 'inline';
+        btnSpin.style.display = 'none';
+    }
 }
 
 
