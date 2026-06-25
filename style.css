@@ -819,6 +819,140 @@ section {
     margin-top: 6px;
 }
 
+/* GRADCAM - ZOOM & DOWNLOAD */
+.gradcam-zoomable {
+    cursor: zoom-in;
+}
+
+.gradcam-zoom-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+
+.gradcam-zoomable:hover .gradcam-zoom-hint {
+    opacity: 1;
+}
+
+.gradcam-dl-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    border: 1px solid var(--border2);
+    background: var(--card);
+    color: var(--text);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, border-color 0.15s;
+    z-index: 2;
+}
+
+.gradcam-zoomable:hover .gradcam-dl-btn {
+    opacity: 1;
+}
+
+.gradcam-dl-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* IMAGE ZOOM MODAL */
+.image-zoom-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.image-zoom-modal.open {
+    display: flex;
+}
+
+.image-zoom-content {
+    background: var(--card);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    max-width: min(820px, 92vw);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.image-zoom-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+.image-zoom-close {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.image-zoom-close:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#image-zoom-img {
+    max-width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    border-radius: var(--radius);
+    background: var(--bg3);
+    margin: 0 auto;
+    display: block;
+}
+
+.image-zoom-download {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    align-self: center;
+}
+
+.image-zoom-download:hover {
+    background: var(--accent2);
+}
+
 /* FINDINGS */
 .findings-list {
     display: flex;
